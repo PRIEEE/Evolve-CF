@@ -5,8 +5,9 @@ import numpy as np
 
 #full connection layer
 class FCLayer:
-    def __init__(self,init_type):
+    def __init__(self,init_type,out_feature):
         self.init_type = init_type #initial type
+        self.out_feature = out_feature
         self.type = 1
         #full connection layers.type = 1
 

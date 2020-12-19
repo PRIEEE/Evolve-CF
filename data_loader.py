@@ -5,129 +5,83 @@ import random
 import pandas as pd
 import numpy as np
 from copy import deepcopy
+import scipy.sparse as sp
 from torch.utils.data import DataLoader, Dataset
 
-random.seed(0)
+class Data(torch.utils.data.Dataset):  # define the dataset
+    def __init__(self, features, num_item, train_mat=None, num_ng=0, is_training=None):
+        super(Data, self).__init__()
+        # Note that the labels are only useful when training, we thus add them in the ng_sample() function.
+        self.features_ps = features
+        self.num_item = num_item
+        self.train_mat = train_mat
+        self.num_ng = num_ng
+        self.is_training = is_training
+        self.labels = [0 for _ in range(len(features))]
 
+    def ng_sample(self):
+        assert self.is_training, 'no need to sampling when testing'
+        self.features_ng = []
+        for x in self.features_ps:
+            u = x[0]
+            for t in range(self.num_ng):
+                j = np.random.randint(self.num_item)
+                while (u, j) in self.train_mat:
+                    j = np.random.randint(self.num_item)
+                self.features_ng.append([u, j])
 
-class UserItemRatingDataset(Dataset):
-    """Wrapper, convert <user, item, rating> Tensor into Pytorch Dataset"""
+        labels_ps = [1 for _ in range(len(self.features_ps))]
+        labels_ng = [0 for _ in range(len(self.features_ng))]
 
-    def __init__(self, user_tensor, item_tensor, target_tensor):
-        """
-        args:
-            target_tensor: torch.Tensor, the corresponding rating for <user, item> pair
-        """
-        self.user_tensor = user_tensor
-        self.item_tensor = item_tensor
-        self.target_tensor = target_tensor
-
-    def __getitem__(self, index):
-        return self.user_tensor[index], self.item_tensor[index], self.target_tensor[index]
+        self.features_fill = self.features_ps + self.features_ng
+        self.labels_fill = labels_ps + labels_ng
 
     def __len__(self):
-        return self.user_tensor.size(0)
+        return (self.num_ng + 1) * len(self.labels)
+
+    def __getitem__(self, idx):
+        '''
+        if self.is_training:
+            self.ng_sample()
+            features = self.features_fill
+            labels = self.labels_fill
+        else:
+            features = self.features_ps
+            labels = self.labels
+        '''
+        features = self.features_fill if self.is_training else self.features_ps
+        labels = self.labels_fill if self.is_training else self.labels
+
+        user = features[idx][0]
+        item = features[idx][1]
+        label = labels[idx]
+        return user, item, label
 
 
-class SampleGenerator(object):
-    """Construct dataset for NCF"""
+# loading dataset function
+def load_dataset(test_num=100):
+    train_data = pd.read_csv("/data/ml-1m.train.rating", \
+                             sep='\t', header=None, names=['user', 'item'], \
+                             usecols=[0, 1], dtype={0: np.int32, 1: np.int32})
 
-    def __init__(self, ratings):
-        """
-        args:
-            ratings: pd.DataFrame, which contains 4 columns = ['userId', 'itemId', 'rating', 'timestamp']
-        """
-        assert 'userId' in ratings.columns
-        assert 'itemId' in ratings.columns
-        assert 'rating' in ratings.columns
+    user_num = train_data['user'].max() + 1
+    item_num = train_data['item'].max() + 1
 
-        self.ratings = ratings
-        # explicit feedback using _normalize and implicit using _binarize
-        # self.preprocess_ratings = self._normalize(ratings)
-        self.preprocess_ratings = self._binarize(ratings)
-        self.user_pool = set(self.ratings['userId'].unique())
-        self.item_pool = set(self.ratings['itemId'].unique())
-        # create negative item samples
-        self.negatives = self._sample_negative(ratings)
-        self.train_ratings, self.test_ratings = self._split_loo(self.preprocess_ratings)
+    train_data = train_data.values.tolist()
 
-    def _normalize(self, ratings):
-        """normalize into [0, 1] from [0, max_rating], explicit feedback"""
-        ratings = deepcopy(ratings)
-        max_rating = ratings.rating.max()
-        ratings['rating'] = ratings.rating * 1.0 / max_rating
-        return ratings
+    # load ratings as a dok matrix
+    train_mat = sp.dok_matrix((user_num, item_num), dtype=np.float32)
+    for x in train_data:
+        train_mat[x[0], x[1]] = 1.0
 
-    def _binarize(self, ratings):
-        """binarize into 0 or 1, imlicit feedback"""
-        ratings = deepcopy(ratings)
-        ratings['rating'][ratings['rating'] > 0] = 1.0
-        return ratings
-
-    def _split_loo(self, ratings):
-        """leave one out train/test split """
-        ratings['rank_latest'] = ratings.groupby(['userId'])['timestamp'].rank(method='first', ascending=False)
-        test = ratings[ratings['rank_latest'] == 1]
-        train = ratings[ratings['rank_latest'] > 1]
-        assert train['userId'].nunique() == test['userId'].nunique()
-        return train[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
-
-    def _sample_negative(self, ratings):
-        """return all negative items & 100 sampled negative items"""
-        interact_status = ratings.groupby('userId')['itemId'].apply(set).reset_index().rename(
-            columns={'itemId': 'interacted_items'})
-        interact_status['negative_items'] = interact_status['interacted_items'].apply(lambda x: self.item_pool - x)
-        interact_status['negative_samples'] = interact_status['negative_items'].apply(lambda x: random.sample(x, 99))
-        return interact_status[['userId', 'negative_items', 'negative_samples']]
-
-    def instance_a_train_loader(self, num_negatives, batch_size):
-        """instance train loader for one training epoch"""
-        users, items, ratings = [], [], []
-        train_ratings = pd.merge(self.train_ratings, self.negatives[['userId', 'negative_items']], on='userId')
-        train_ratings['negatives'] = train_ratings['negative_items'].apply(lambda x: random.sample(x, num_negatives))
-        for row in train_ratings.itertuples():
-            users.append(int(row.userId))
-            items.append(int(row.itemId))
-            ratings.append(float(row.rating))
-            for i in range(num_negatives):
-                users.append(int(row.userId))
-                items.append(int(row.negatives[i]))
-                ratings.append(float(0))  # negative samples get 0 rating
-        dataset = UserItemRatingDataset(user_tensor=torch.LongTensor(users),
-                                        item_tensor=torch.LongTensor(items),
-                                        target_tensor=torch.FloatTensor(ratings))
-        return DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
-    @property
-    def evaluate_data(self):
-        """create evaluate data"""
-        test_ratings = pd.merge(self.test_ratings, self.negatives[['userId', 'negative_samples']], on='userId')
-        test_users, test_items, negative_users, negative_items = [], [], [], []
-        for row in test_ratings.itertuples():
-            test_users.append(int(row.userId))
-            test_items.append(int(row.itemId))
-            for i in range(len(row.negative_samples)):
-                negative_users.append(int(row.userId))
-                negative_items.append(int(row.negative_samples[i]))
-        return [torch.LongTensor(test_users), torch.LongTensor(test_items), torch.LongTensor(negative_users),
-                torch.LongTensor(negative_items)]
-
-if __name__ == '__main__':
-    ml1m_dir = 'data/ml-1m/ratings.dat'
-    ml1m_rating = pd.read_csv(ml1m_dir, sep='::', header=None, names=['uid', 'mid', 'rating', 'timestamp'],
-                              engine='python')
-    # Reindex
-    user_id = ml1m_rating[['uid']].drop_duplicates().reindex()
-    user_id['userId'] = np.arange(len(user_id))
-    ml1m_rating = pd.merge(ml1m_rating, user_id, on=['uid'], how='left')
-    item_id = ml1m_rating[['mid']].drop_duplicates()
-    item_id['itemId'] = np.arange(len(item_id))
-    ml1m_rating = pd.merge(ml1m_rating, item_id, on=['mid'], how='left')
-    ml1m_rating = ml1m_rating[['userId', 'itemId', 'rating', 'timestamp']]
-    print('Range of userId is [{}, {}]'.format(ml1m_rating.userId.min(), ml1m_rating.userId.max()))
-    print('Range of itemId is [{}, {}]'.format(ml1m_rating.itemId.min(), ml1m_rating.itemId.max()))
-    # DataLoader for training
-    sample_generator = SampleGenerator(ratings=ml1m_rating)
-    evaluate_data = sample_generator.evaluate_data
-    train_data = sample_generator.train_ratings
-    test_data = sample_generator.test_ratings
+    test_data = []
+    with open("/data/ml-1m.test.negative", 'r') as fd:
+        line = fd.readline()
+        while line != None and line != '':
+            arr = line.split('\t')
+            u = eval(arr[0])[0]
+            test_data.append([u, eval(arr[0])[1]])  # one postive item
+            for i in arr[1:]:
+                test_data.append([u, int(i)])  # 99 negative items
+            line = fd.readline()
+    return train_data, test_data, user_num, item_num, train_mat

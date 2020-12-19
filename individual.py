@@ -8,23 +8,29 @@ class Individual:
     def __init__(self, x_prob=0.9, x_eat=1, m_prob=0.2, m_eat=1):
         #x_prob: sbx概率 x_eta：sbx参数 m代表pm
         self.init = []
+        self.embedding_layer = []
         self.x_prob = x_prob
         self.x_eat = x_eat
         self.m_prob = m_prob
         self.m_eta = m_eat
         self.mean_loss = 0
+        self.ndcg = 0
+        self.hr = 0
         self.std = 0
         self.complexity = 0 #复杂度，用number of params衡量
 
-        ##
-        #self.feature_map_siza_range =
-        self.init_type = []#############set initial type
-        self.dropout_set = []###set dropout set
-        ##
+        self.out_feature_size_range = [100,200]#########
+        self.init_type_set = 3 #############set initial type
+        self.dropout_set = [0.5,1.0]###set dropout set
+        ##用来在编码中表示两个embedding层
+        self.embedding_layer = []
+
 
     def clear_state_info(self):
         self.complexity = 0
         self.mean_loss = 0
+        self.ndcg = 0
+        self.hr = 0
         self.std = 0
 
     def initialize(self):
@@ -33,7 +39,6 @@ class Individual:
     def init_one_individual(self):
         init_num_fc = np.random.randint(4,9)###########
         _list = []
-        #######?struct design?
         ##第一层为embedding层
         _list.append(self.add_an_embedding_layer)
         for _ in range(init_num_fc-1):
@@ -48,39 +53,39 @@ class Individual:
     def get_layer_size(self):
         return len(self.indi)
 
-    ##############???定义初始化种类
+    #choose initial type randomly
     def initial_type(self):
-        return
-    ##
-    ###### the definition of feature map size
-    def init_feature_map_size(self):
-        return np.random.randint(self.feature_map_size_range[0],self.feature_map_size_range[1])
+        return np.random.choice(4)
+
+    def init_out_feature_size(self):
+        return np.random.randint(self.out_feature_size_range[0],self.out_feature_size_range[1])
 
     ##define the full connection layer
     def add_a_random_fc_layer(self):
-        s1 = self.init_type()
+        init_type = self.initial_type()
+        out_feature_size = self.init_out_feature_size()
+        fc_layer = FCLayer(init_type=init_type,out_feature=out_feature_size)
+        return fc_layer
 
+    #############
     def add_a_pridict_layer(self):
         init_type = self.initial_type()
         predict_layer = FCLayer(init_type=init_type)
         return predict_layer
 
-    def add_a_random_fc_layer(self):
-        init_type = self.init_type()
-        fc_layer = FCLayer(init_type)
-        return fc_layer
-
     def add_a_random_dropout_layer(self):
         dropout = 0.5 #####set dropout rate???
-        init_type = self.init_type
+        init_type = self.initial_type()
         dropout_layer = Dropout(dropout, init_type)
         return dropout_layer
 
     ############第一层为embedding层
     def add_a_embedding_layer(self):
-        ####embedding 参数？ user num , factor num
-        init_type = self.init_type
-        embedding_layer = FCLayer(init_type)
+        ####embedding 参数
+        ##embed_user = nn.Embedding(user_unm,factor_num)
+        ##embed_item = nn.Embedding(item_num,factor_num)
+        #input = torch.cat((embed_user,embed_item),-1)
+        embedding_layer = Embedding(user_num,factor_num)
         return embedding_layer
 
     def mutation(self):
@@ -144,18 +149,18 @@ class Individual:
             return self.mutate_dropout_unit(unit,eat)
 
     def mutate_fc_unit(self,unit,eat):
-        ##
-        ##
-        new_init_type = np.random.choice(self.init_type_set)###########init_type_set
-        fc_layer = FCLayer(init_type=new_init_type)
+        of = unit.out_feature
+
+        new_of = int(self.pm(self.out_feature_size_range[0],self.out_feature_size_range[1],of,eat))
+        new_init_type = np.random.choice(self.init_type_set)
+        fc_layer = FCLayer(init_type=new_init_type,out_feature=new_of)
         return fc_layer
 
     def mutate_dropout_unit(self,unit,eat):
         dropout = unit.dropout
-        init_type = unit.init_type
 
-        new_dropout = dropout####### dropout 范围怎么选
-        new_init_type = np.random.choice(self.init_type_set)###########init_type_set
+        new_dropout = self.pm(self.dropout_set[0],self.dropout_set[1],dropout,eat)
+        new_init_type = np.random.choice(self.init_type_set)
         dropout_layer = Dropout(init_type=new_init_type,dropout=new_dropout)
         return dropout_layer
 
@@ -171,7 +176,6 @@ class Individual:
     def generate_a_new_layer(self):
         return self.add_a_random_fc_layer()
 
-    #######????有什么用
     def pm(self, xl, xu, x, eta):
         '''
         :param xl: 最小值
