@@ -7,16 +7,20 @@ class DNN(nn.ModuleList):
     def __init__(self,indi):
         super(DNN, self).__init__()
         num_of_unit = indi.get_layer_size()
-        factor_num = indi.get_factor()
+        factor_num = indi.get_factor()######
+
+        ##embed_user = nn.Embedding(user_unm,factor_num)
+        ##embed_item = nn.Embedding(item_num,factor_num)
+        # input = torch.cat((embed_user,embed_item),-1)
 
         out_features = 0###########
         for i in range(num_of_unit):
-            #在第一层加入embedding层
             current_unit = indi.get_layer_at(i)
+            if(i == 0):
+                #embedding layer
+                self.append()#################
             if current_unit.type == 1:
-                mean = current_unit.weight_matrix_mean
-                std = current_unit.weight_matrix_std
-                input_size = factor_num * (2**(num_of_unit - i))
+                input_size = factor_num * (2**(num_of_unit - i))###
                 linear = nn.Linear(input_size,input_size//2)#####input-size and output size 是否要加入演化
                 ###########初始化网络 ↓要改
                 #nn.init.xxxx
