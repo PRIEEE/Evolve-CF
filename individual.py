@@ -7,8 +7,8 @@ from utils import *
 class Individual:
     def __init__(self, x_prob=0.9, x_eat=1, m_prob=0.2, m_eat=1):
         #x_prob: sbx概率 x_eta：sbx参数 m代表pm
-        self.init = []
-        self.embedding_layer = []
+        self.indi = []
+        #self.embedding_layer = []
         self.x_prob = x_prob
         self.x_eat = x_eat
         self.m_prob = m_prob
@@ -20,7 +20,7 @@ class Individual:
         self.complexity = 0 #复杂度，用number of params衡量
 
         self.out_feature_size_range = [100,200]#########
-        self.init_type_set = 3 #############set initial type
+        self.init_type_set = 2 #############set initial type
         self.dropout_set = [0.5,1.0]###set dropout set
         ##用来在编码中表示两个embedding层
         self.embedding_layer = []
@@ -34,17 +34,17 @@ class Individual:
         self.std = 0
 
     def initialize(self):
-        self.indi = self.init_one_individual
+        self.indi = self.init_one_individual()
 
     def init_one_individual(self):
         init_num_fc = np.random.randint(4,9)###########
         _list = []
         ##第一层为embedding层
-        _list.append(self.add_an_embedding_layer)
+        #_list.append(self.add_an_embedding_layer)
         for _ in range(init_num_fc-1):
             _list.append(self.add_a_random_fc_layer())
             _list.append(self.add_a_random_dropout_layer())
-        _list.append(self.add_a_predict_layer())#nn.Linear(factor_num*2,1)
+        #_list.append(self.add_a_predict_layer())#nn.Linear(factor_num*2,1)
         return _list
 
     def get_layer_at(self, i):
@@ -55,10 +55,13 @@ class Individual:
 
     #choose initial type randomly
     def initial_type(self):
-        return np.random.choice(4)
+        return np.random.choice(self.init_type_set)
 
     def init_out_feature_size(self):
         return np.random.randint(self.out_feature_size_range[0],self.out_feature_size_range[1])
+
+    def init_dropout_rate(self):
+        return round(np.random.uniform(self.dropout_set[0],self.dropout_set[1]),1)
 
     ##define the full connection layer
     def add_a_random_fc_layer(self):
@@ -67,36 +70,17 @@ class Individual:
         fc_layer = FCLayer(init_type=init_type,out_feature=out_feature_size)
         return fc_layer
 
-    #############
-    def add_a_pridict_layer(self):
-        init_type = self.initial_type()
-        predict_layer = FCLayer(init_type=init_type)
-        return predict_layer
-
     def add_a_random_dropout_layer(self):
-        dropout = 0.5 #####set dropout rate???
-        init_type = self.initial_type()
-        dropout_layer = Dropout(dropout, init_type)
+        dropout = self.init_dropout_rate()
+        dropout_layer = Dropout(dropout)
         return dropout_layer
-
-    ############第一层为embedding层
-    def add_a_embedding_layer(self):
-        ####embedding 参数
-        ##embed_user = nn.Embedding(user_unm,factor_num)
-        ##embed_item = nn.Embedding(item_num,factor_num)
-        #input = torch.cat((embed_user,embed_item),-1)
-        embedding_layer = Embedding(user_num,factor_num)
-        return embedding_layer
 
     def mutation(self):
         if flip(self.m_prob):
             # for the units
             unit_list = []
             for i in range(self.get_layer_size()-1):
-                #############第一层：embedding
-                if i == 0:
-                    unit_list.append(self.get_layer_at(0))
-                if i % 2 == 1:  ##只遍历full connection layer,保证full connection，dropout交替出现
+                if i % 2 == 0:  ##只遍历full connection layer,保证full connection，dropout交替出现
                     cur_unit = self.get_layer_at(i)
                     next_unit = self.get_layer_at(i+1)
                     if flip(0.5):
@@ -136,7 +120,7 @@ class Individual:
                         unit_list.append(next_unit)
 
             #最后一层不动，保证输出结果格式正确
-            unit_list.append(self.get_layer_at(-1))
+            #unit_list.append(self.get_layer_at(-1))
 
             self.indi = unit_list
 
@@ -161,7 +145,7 @@ class Individual:
 
         new_dropout = self.pm(self.dropout_set[0],self.dropout_set[1],dropout,eat)
         new_init_type = np.random.choice(self.init_type_set)
-        dropout_layer = Dropout(init_type=new_init_type,dropout=new_dropout)
+        dropout_layer = Dropout(dropout=new_dropout)
         return dropout_layer
 
     def mutation_ope(self,r):
@@ -214,10 +198,10 @@ class Individual:
             unit = self.get_layer_at(i)
             if unit.type == 1:
                 str_.append(
-                    "full connection[{}]".format(unit.init_type)
+                    "full connection[{0},{1}]".format(unit.init_type,unit.out_feature)
                 )
             elif unit.type == 2:
-                str_.append("dropout[{},{}]".format(unit.dropout,unit.init_type))
+                str_.append("dropout[{0}]".format(unit.dropout))
             else:
                 raise Exception("Incorrect unit flag")
         return ', '.join(str_)
@@ -227,13 +211,15 @@ if __name__ == "__main__":
     # for _ in range(10):
 
     indi.initialize()
+    #print(indi.init_one_individual())
+    #print(len(indi.init_one_individual()))
     print(indi.get_layer_size())
     for i in range(indi.get_layer_size()):
         cur_unit = indi.get_layer_at(i)
         print(cur_unit)
 
     print('------------------------')
-
+    print("Mutation:")
     indi.mutation()
     for i in range(indi.get_layer_size()):
         cur_unit = indi.get_layer_at(i)

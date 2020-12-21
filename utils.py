@@ -98,7 +98,7 @@ def metricsHR(model, test_loader, top_k):
 
         gt_item = item[0].item()
         #HR.append(hit(gt_item, recommends))
-        HR.append(ndcg(gt_item, recommends))
+        HR.append(hit(gt_item, recommends))
     return np.mean(HR)
 
 # evaluate function

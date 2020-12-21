@@ -12,13 +12,15 @@ class FCLayer:
         #full connection layers.type = 1
 
     def __str__(self):
-        return "FC Layer:"
+        return "FC Layer:initial type:{0}, out feature:{1}".format(self.init_type,self.out_feature)
 
 
 class Dropout:
-    def __init__(self,dropout,init_type):
-        self.init_type = init_type
+    def __init__(self,dropout):
         self.dropout  = dropout
 
         self.type = 2
         #dropout layer.type = 2
+
+    def __str__(self):
+        return "Dropout Layer: dropout rate:{0}".format(self.dropout)
