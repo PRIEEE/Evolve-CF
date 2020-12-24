@@ -84,8 +84,8 @@ class Evolve_DNN:
     def crossover(self, p1, p2):
         p1 = copy.deepcopy(p1)
         p2 = copy.deepcopy(p2)
-        p1.clear_state_info()
-        p2.clear_state_info()
+        #p1.clear_state_info()
+        #p2.clear_state_info()
 
         p1_fc_layer_list = []
         p1_dropout_layer_list = []
@@ -113,27 +113,17 @@ class Evolve_DNN:
                 if i != l - 1:
                     # 最后一层不交换filter_size and feature_map_size
                     # filter size : exchange each's filter size#############
-                    w1 = unit_p1.filter_width
-                    w2 = unit_p2.filter_width
-                    unit_p1.filter_width = w2
-                    unit_p1.filter_height = w2
-                    unit_p2.filter_width = w1
-                    unit_p2.filter_height = w1
-                    # feature map size   ##############
-                    this_range = p1.feature_map_size_range
-                    s1 = unit_p1.feature_map_size
-                    s2 = unit_p2.feature_map_size
+                    w1 = unit_p1.init_type
+                    w2 = unit_p2.init_type
+                    unit_p1.init_type = w2
+                    unit_p2.init_type = w1
+                    # out feature   ##############
+                    this_range = p1.out_feature_size_range
+                    s1 = unit_p1.out_feature
+                    s2 = unit_p2.out_feature
                     n_s1, n_s2 = self.sbx(s1, s2, this_range[0], this_range[-1], self.x_eta)
-                    unit_p1.feature_map_size = int(n_s1)
-                    unit_p2.feature_map_size = int(n_s2)
-                # initial type
-                this_range = p1.mean_range  ############
-                m1 = unit_p1.init_type
-                m2 = unit_p2.init_type
-                ##???exchange
-                n_m1, n_m2 = self.sbx(m1, m2, this_range[0], this_range[-1], self.x_eta)
-                unit_p1.init_type = n_m1
-                unit_p2.init_type = n_m2
+                    unit_p1.out_feature = int(n_s1)
+                    unit_p2.out_feature = int(n_s2)
 
             p1_fc_layer_list[i] = unit_p1
             p2_fc_layer_list[i] = unit_p2
@@ -150,14 +140,7 @@ class Evolve_DNN:
                 n_m1, n_m2 = self.sbx(m1, m2, this_range[0], this_range[-1], self.x_eta)
                 unit_p1.dropout = n_m1
                 unit_p2.dropout = n_m2
-                # initial type
-                this_range = p1.bn_std_range    ##############
-                std1 = unit_p1.init_type
-                std2 = unit_p2.init_type
-                ####exchange???
-                n_std1, n_std2 = self.sbx(std1, std2, this_range[0], this_range[-1], self.x_eta)
-                unit_p1.init_type = n_std1
-                unit_p2.init_type = n_std2
+
             p1_dropout_layer_list[i] = unit_p1
             p2_dropout_layer_list[i] = unit_p2
 
@@ -231,22 +214,81 @@ class Evolve_DNN:
         complexity_threhold = 0.1
         #param用比例,ndcg用绝对的数值
         if ind1.ndcg < ind2.ndcg:
+            return ind2
             # 此时ind2性能比1好
-            if ind2.ndcg - ind1.ndcg > ndcg_threshold:  # 差值越大说明1的性能越差
-                return ind2
-            else:
+            #if ind2.ndcg - ind1.ndcg > ndcg_threshold:  # 差值越大说明1的性能越差
+             #   return ind2
+            # else:
                 # 在没有差到超过阈值mean_threshold的情况下，如果2的复杂度相对1的百分比没有超过阈值则返回2，反之则返回1
                 # 因为老是有零除错误，所以改为乘号
-                if ind2.complexity - ind1.complexity > complexity_threhold * ind1.complexity:
-                    return ind1
-                else:
-                    return ind2
+                #if ind2.complexity - ind1.complexity > complexity_threhold * ind1.complexity:
+                #    return ind1
+                #else:
+                #    return ind2
         else:
+            return ind1
             # 此时ind1性能比2好
-            if ind1.ndcg - ind2.ndcg > ndcg_threshold:
-                return ind1
-            else:
-                if ind1.complexity - ind2.complexity > complexity_threhold * ind2.complexity:
-                    return ind2
-                else:
-                    return ind1
+            #if ind1.ndcg - ind2.ndcg > ndcg_threshold:
+            #    return ind1
+            #else:
+            #    if ind1.complexity - ind2.complexity > complexity_threhold * ind2.complexity:
+            #        return ind2
+            #    else:
+            #        return ind1
+
+if __name__ == '__main__':
+    '''
+    
+    #mutation 测试
+    dnn = Evolve_DNN(0.1,10,0.9,1,10,8)
+    dnn.initialize_popualtion()
+    print(dnn.pops)
+    print("mutation and crossover…")
+    offspring_list = []
+    for _ in range(int(dnn.pops.get_pop_size()/2)):
+        p1 = dnn.tournament_selection()
+        p2 = dnn.tournament_selection()
+        #crossover
+        offset1, offset2 = dnn.crossover(p1,p2)
+        #mutation
+        offset1.mutation()
+        offset2.mutation()
+        offspring_list.append(offset1)
+        offspring_list.append(offset1)
+        offspring_list.append(offset2)
+    offspring_pops = Population(0)
+    offspring_pops.set_populations(offspring_list)
+    print(offspring_pops)
+    '''
+
+
+    # crossover测试
+    dnn = Evolve_DNN(0.1, 10, 0.9, 1, 10, 8)
+    indi1 = Individual()
+    indi2 = Individual()
+
+    indi1.initialize()
+    indi2.initialize()
+    print(indi1.get_layer_size())
+    for i in range(indi1.get_layer_size()):
+        cur_unit = indi1.get_layer_at(i)
+        print(cur_unit)
+    print('------------------------')
+    print(indi2.get_layer_size())
+    for i in range(indi2.get_layer_size()):
+        cur_unit = indi2.get_layer_at(i)
+        print(cur_unit)
+    print('------------------------')
+
+    print('crossover---------------')
+    indi1, indi2 = dnn.crossover(indi1, indi2)
+    print(indi1.get_layer_size())
+    for i in range(indi1.get_layer_size()):
+        cur_unit = indi1.get_layer_at(i)
+        print(cur_unit)
+    print('------------------------')
+    print(indi2.get_layer_size())
+    for i in range(indi2.get_layer_size()):
+        cur_unit = indi2.get_layer_at(i)
+        print(cur_unit)
+    print('------------------------')

@@ -87,7 +87,7 @@ class Evaluate:
 
             # 可选 5.5 打印训练信息和保存loss
             loss_dict.append(loss.item())
-            if (i + 1) % 100 == 0:
+            if (i + 1) % 5000 == 0:
                 print('Epoch [{}/{}], Loss: {:.4f}'.format(i + 1, num_epochs, loss.item()))
 
         # evaluate
