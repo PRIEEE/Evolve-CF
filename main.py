@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # train_data, validation_data, test_data = get_mnist_data()
     batch_size = 256
     total_generation_number = 10  # total generation number
-    pop_size = 30
+    pop_size = 16
 
     # # 测试
     gen_no, pops, create_time = load_population()

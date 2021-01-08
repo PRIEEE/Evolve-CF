@@ -22,8 +22,7 @@ class Individual:
         self.out_feature_size_range = [100,200]#########
         self.init_type_set = 2 #############set initial type
         self.dropout_set = [0.5,1.0]###set dropout set
-        ##用来在编码中表示两个embedding层
-        self.embedding_layer = []
+
 
 
     def clear_state_info(self):
@@ -40,7 +39,7 @@ class Individual:
         init_num_fc = np.random.randint(4,9)###########
         _list = []
         ##第一层为embedding层
-        #_list.append(self.add_an_embedding_layer)
+
         for _ in range(init_num_fc-1):
             _list.append(self.add_a_random_fc_layer())
             _list.append(self.add_a_random_dropout_layer())
@@ -191,8 +190,10 @@ class Individual:
     def __str__(self):
         str_ = []
         str_.append('Length:{},Num:{}'.format(self.get_layer_size(),self.complexity))
-        str_.append('Mean:{:.2f}'.format(self.mean_loss))
-        str_.append('Std:{:.2f}'.format(self.std))
+        #str_.append('Mean:{:.2f}'.format(self.mean_loss))
+        #str_.append('Std:{:.2f}'.format(self.std))
+        str_.append('NDCG:{:.2f}'.format(self.ndcg))
+        str_.append('HR:{:.2f}'.format(self.hr))
 
         for i in range(self.get_layer_size()):
             unit = self.get_layer_at(i)
