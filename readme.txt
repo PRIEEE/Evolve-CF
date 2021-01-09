@@ -24,6 +24,6 @@ neural network architecture:
 	4`predict layer:Linear(factor_num * 2, 1)
 
 待解决问题：
-1.colab最长连接时常为12小时，修改population size为16，未测试是否能运行完
-（google colab杀熟，用的越多，分的越少，辣鸡）
-2.选择时仅选择ndcg作为metric，后续是否需要添加其他metrics，添加后如何更改选择条件
+目前种群规模：16，进化10代
+训练结果HR非常优秀，NDCG很一般，说明可以找到用户偏好的item，但是排序不佳
+老师给出的改进方案：扩大种群规模，训练20代
