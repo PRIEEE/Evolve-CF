@@ -59,9 +59,9 @@ class Evaluate:
         criterion = nn.BCEWithLogitsLoss()
         criterion = criterion.to(torch_device)
 
-        # 4.定义迭代优化算法， 使用的是Adam，SGD不行
+        # 4.定义迭代优化算法， 使用SGD
         learning_rate = 0.001
-        optimizer = torch.optim.Adam(dnn.parameters(), lr=learning_rate)  ##########
+        optimizer = torch.optim.SGD(dnn.parameters(), lr=learning_rate)  ##########
         loss_dict = []
         num_epochs = train_loader.__len__()
         # Train the model 5. 迭代训练
