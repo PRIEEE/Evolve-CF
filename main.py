@@ -11,7 +11,7 @@ def begin_evolve(m_prob, m_eta, x_prob, x_eta, pop_size, batch_size, total_gener
     dnn.evaluate_fitness(0, 0)
 
 
-def restart_evolve(m_prob, m_eta, x_prob, x_eta, pop_size, batch_size, total_gene_number):
+def restart_evolve(m_prob: object, m_eta: object, x_prob: object, x_eta: object, pop_size: object, batch_size: object, total_gene_number: object) -> object:
     gen_no, pops, _ = load_population()
     evaluated_num = pops.get_evaluated_pop_size()
     dnn = Evolve_DNN(m_prob, m_eta, x_prob, x_eta, pop_size, batch_size)
@@ -35,8 +35,8 @@ def restart_evolve(m_prob, m_eta, x_prob, x_eta, pop_size, batch_size, total_gen
 if __name__ == '__main__':
     # train_data, validation_data, test_data = get_mnist_data()
     batch_size = 256
-    total_generation_number = 10  # total generation number
-    pop_size = 16
+    total_generation_number = 20  # total generation number
+    pop_size = 30
 
     # # 测试
     gen_no, pops, create_time = load_population()
@@ -45,5 +45,5 @@ if __name__ == '__main__':
     print(pops.get_evaluated_pop_size())
 
 
-    begin_evolve(0.2, 1, 0.9, 1, pop_size, batch_size, total_generation_number)
+    #begin_evolve(0.2, 1, 0.9, 1, pop_size, batch_size, total_generation_number)
     restart_evolve(0.2, 1, 0.9, 1, pop_size, batch_size, total_generation_number)

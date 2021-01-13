@@ -77,7 +77,7 @@ class Evolve_DNN:
         self.pops.set_populations(elistm_list)
         save_populations(gen_no=gen_no, pops=self.pops)
         save_each_gen_population(gen_no=gen_no, pops=self.pops)
-        if gen_no != 10:
+        if gen_no != 20: ###############################################
             #最后一代不用shuffle
             np.random.shuffle(self.pops.pops)
 
@@ -216,25 +216,9 @@ class Evolve_DNN:
         if ind1.ndcg < ind2.ndcg:
             return ind2
             # 此时ind2性能比1好
-            #if ind2.ndcg - ind1.ndcg > ndcg_threshold:  # 差值越大说明1的性能越差
-             #   return ind2
-            # else:
-                # 在没有差到超过阈值mean_threshold的情况下，如果2的复杂度相对1的百分比没有超过阈值则返回2，反之则返回1
-                # 因为老是有零除错误，所以改为乘号
-                #if ind2.complexity - ind1.complexity > complexity_threhold * ind1.complexity:
-                #    return ind1
-                #else:
-                #    return ind2
         else:
             return ind1
             # 此时ind1性能比2好
-            #if ind1.ndcg - ind2.ndcg > ndcg_threshold:
-            #    return ind1
-            #else:
-            #    if ind1.complexity - ind2.complexity > complexity_threhold * ind2.complexity:
-            #        return ind2
-            #    else:
-            #        return ind1
 
 if __name__ == '__main__':
     '''

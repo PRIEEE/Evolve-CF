@@ -85,8 +85,8 @@ class Individual:
                     if flip(0.5):
                         #mutation
                         p_op = self.mutation_ope(rand())
-                        min_length = 4
-                        max_length = 8
+                        min_length = 3
+                        max_length = 6
                         current_length = (len(unit_list) + self.get_layer_size()-i-1)/2
                         #current_legth是现在unit_list长度加剩下去掉最后一层的长度
                         if p_op == 0: #add a new

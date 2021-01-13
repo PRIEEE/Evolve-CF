@@ -60,7 +60,7 @@ class Evaluate:
         criterion = criterion.to(torch_device)
 
         # 4.定义迭代优化算法， 使用的是Adam
-        learning_rate = 0.001
+        learning_rate = 0.002 #########################
         optimizer = torch.optim.Adam(dnn.parameters(), lr=learning_rate)  ##########
         loss_dict = []
         num_epochs = train_loader.__len__()
@@ -113,7 +113,6 @@ class Evaluate:
         #std_test_loss = np.std(test_loss_dict)
         print("HR:{},NDCG:{}".format(HR, NDCG))
         return HR, NDCG
-        #, complexity
 
         # return mean_test_accu, np.std(test_accuracy_list), complexity, history_best_score
 

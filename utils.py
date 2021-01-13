@@ -81,7 +81,6 @@ def metricsNDCG(model, test_loader, top_k):
         recommends = torch.take(item, indices).cpu().numpy().tolist()
 
         gt_item = item[0].item()
-        #HR.append(hit(gt_item, recommends))
         NDCG.append(ndcg(gt_item, recommends))
     return np.mean(NDCG)
 
@@ -97,7 +96,6 @@ def metricsHR(model, test_loader, top_k):
         recommends = torch.take(item, indices).cpu().numpy().tolist()
 
         gt_item = item[0].item()
-        #HR.append(hit(gt_item, recommends))
         HR.append(hit(gt_item, recommends))
     return np.mean(HR)
 
