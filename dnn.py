@@ -8,9 +8,9 @@ class DNN(nn.Module):
         super(DNN, self).__init__()
         num_of_unit = indi.get_layer_size()
 
-        self.embed_user = nn.Embedding(user_num,factor_num)
+        self.embed_user = nn.Embedding(user_num,factor_num* (2 ** (num_of_unit - 1)))
         nn.init.normal_(self.embed_user.weight, std=0.01)
-        self.embed_item = nn.Embedding(item_num,factor_num)
+        self.embed_item = nn.Embedding(item_num,factor_num* (2 ** (num_of_unit - 1)))
         nn.init.normal_(self.embed_item.weight, std=0.01)
         #self.input = torch.cat((self.embed_user,self.embed_item),-1)#####拼接
 
@@ -19,23 +19,39 @@ class DNN(nn.Module):
             current_unit = indi.get_layer_at(i)
             last_unit = indi.get_layer_at(i-2)
             if i == 0:#####full connection， 用来接收embedding的结果
-                input_size = factor_num*2
+                input_size = (factor_num* (2 ** (num_of_unit - 1)))*2
                 out_features = current_unit.out_feature
                 linear = nn.Linear(input_size,out_features)
                 ###########初始化网络权重
                 init_type = current_unit.init_type
                 if init_type == 0:
-                    nn.init.kaiming_uniform_(linear.weight)
+                    nn.init.normal_(linear.weight, std=0.01)
                 if init_type == 1:
+                    nn.init.xavier_uniform_(linear.weight)
+                if init_type == 2:
+                    nn.init.xavier_normal_(linear.weight)
+                if init_type == 3:
+                    nn.init.kaiming_uniform_(linear.weight,a=0, nonlinearity='leaky_relu')
+                if init_type == 4:
+                    nn.init.kaiming_normal_(linear.weight, a=0, nonlinearity='leaky_relu')
+                if init_type == 5:
                     nn.init.kaiming_uniform_(linear.weight, a=1, nonlinearity='sigmoid')
                 reg_dnn.append(linear)
             elif i == num_of_unit-2:
                 input_size = last_unit.out_feature
-                linear = nn.Linear(input_size,out_features=factor_num*2)
+                linear = nn.Linear(input_size,out_features=factor_num)
                 init_type = current_unit.init_type
                 if init_type == 0:
-                    nn.init.kaiming_uniform_(linear.weight)
+                    nn.init.normal_(linear.weight, std=0.01)
                 if init_type == 1:
+                    nn.init.xavier_uniform_(linear.weight)
+                if init_type == 2:
+                    nn.init.xavier_normal_(linear.weight)
+                if init_type == 3:
+                    nn.init.kaiming_uniform_(linear.weight, a=0, nonlinearity='leaky_relu')
+                if init_type == 4:
+                    nn.init.kaiming_normal_(linear.weight, a=0, nonlinearity='leaky_relu')
+                if init_type == 5:
                     nn.init.kaiming_uniform_(linear.weight, a=1, nonlinearity='sigmoid')
                 reg_dnn.append(linear)
                 reg_dnn.append(nn.ReLU())
@@ -47,8 +63,16 @@ class DNN(nn.Module):
                     ###########初始化网络权重
                     init_type = current_unit.init_type
                     if init_type == 0:
-                        nn.init.kaiming_uniform_(linear.weight)
+                        nn.init.normal_(linear.weight, std=0.01)
                     if init_type == 1:
+                        nn.init.xavier_uniform_(linear.weight)
+                    if init_type == 2:
+                        nn.init.xavier_normal_(linear.weight)
+                    if init_type == 3:
+                        nn.init.kaiming_uniform_(linear.weight, a=0, nonlinearity='leaky_relu')
+                    if init_type == 4:
+                        nn.init.kaiming_normal_(linear.weight, a=0, nonlinearity='leaky_relu')
+                    if init_type == 5:
                         nn.init.kaiming_uniform_(linear.weight, a=1, nonlinearity='sigmoid')
                     reg_dnn.append(linear)
                     reg_dnn.append(nn.ReLU())
@@ -65,7 +89,7 @@ class DNN(nn.Module):
 
         self.dnn_layer = nn.Sequential(*reg_dnn)
 
-        self.predict_layer = nn.Linear(factor_num * 2, 1)
+        self.predict_layer = nn.Linear(factor_num, 1)###########
         nn.init.kaiming_uniform_(self.predict_layer.weight, a=1, nonlinearity='sigmoid')
         #self.reg_dnn.append(predict_layer)
 
