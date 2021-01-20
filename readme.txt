@@ -26,9 +26,3 @@ neural network architecture:
 		dropout unit: dropout
 	4`predict layer:Linear(factor_num, 1)
 
-待解决问题：
-目前种群规模：16，进化10代
-训练结果HR非常优秀，NDCG很一般，说明可以找到用户偏好的item，但是排序不佳
-老师给出的改进方案：训练20代
-
-修改种群规模：30，进化20代，未完成
