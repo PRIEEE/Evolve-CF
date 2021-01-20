@@ -23,7 +23,7 @@ class Evaluate:
     def __init__(self, pops, batch_size):
         self.pops = pops
         self.batch_size = batch_size
-        self.factor_num = 32
+        self.factor_num = 8
 
     def parse_population(self, gen_no, evaluated_num):
         save_dir = os.getcwd() + '/save_data/gen_{:03d}'.format(gen_no)
@@ -50,7 +50,7 @@ class Evaluate:
 
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=256, shuffle=True, num_workers=4)
 
-        dnn = DNN(int(user_num),int(item_num),factor_num=32, indi=indi)  ##################
+        dnn = DNN(int(user_num),int(item_num),factor_num=8, indi=indi)  ##################
         dnn.cuda()
         print(dnn)
         #complexity = get_total_params(dnn.cuda(), (220, 30, 30))  ########todo: change the inpupt size
