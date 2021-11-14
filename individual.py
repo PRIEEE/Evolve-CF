@@ -21,7 +21,7 @@ class Individual:
 
         self.out_feature_size_range = [16,256]#########
         self.init_type_set = 6 #############set initial type
-        self.dropout_set = [0.5,1.0]###set dropout set
+        self.dropout_set = [0.0,0.4]###set dropout set
 
 
 

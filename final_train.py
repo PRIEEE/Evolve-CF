@@ -68,14 +68,14 @@ class DNN(nn.Module):
     def __init__(self, user_num, item_num, factor_num):
         super(DNN, self).__init__()
 
-        self.embed_user = nn.Embedding(user_num, factor_num)
+        self.embed_user = nn.Embedding(user_num, factor_num*2)
         nn.init.normal_(self.embed_user.weight, std=0.01)
-        self.embed_item= nn.Embedding(item_num, factor_num)
+        self.embed_item= nn.Embedding(item_num, factor_num*2)
         nn.init.normal_(self.embed_item.weight, std=0.01)
 
         DNN_modules = []
 
-        input_size =factor_num*2
+        input_size =factor_num*4
         linear = nn.Linear(input_size, 196)
         nn.init.kaiming_uniform_(linear.weight, a=0, nonlinearity='leaky_relu')
         DNN_modules.append(linear)
@@ -86,7 +86,7 @@ class DNN(nn.Module):
         DNN_modules.append(linear)
         DNN_modules.append(nn.ReLU())
         DNN_modules.append(nn.Dropout(p=0.06))
-        linear = nn.Linear(156, 32)
+        linear = nn.Linear(156, factor_num)
         nn.init.xavier_normal_(linear.weight)
         DNN_modules.append(linear)
         DNN_modules.append(nn.ReLU())
@@ -182,7 +182,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"  # using gpu
 cudnn.benchmark = True
 # training and evaluationg
 print("%3s%20s%20s%20s" % ('K', 'Iterations', 'HitRatio', 'NDCG'))
-for K in [8, 16, 32, 64]:  # latent factors
+for K in [8]:  # latent factors
     model = DNN(int(user_num), int(item_num), factor_num=K)
     model.cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -207,14 +207,17 @@ for K in [8, 16, 32, 64]:  # latent factors
             loss_dict.append(loss.item())
 
         print('Loss: {:.4f}'.format(np.mean(loss_dict)))
-        file_path = os.getcwd() + '/loss/loss_{}.txt'.format(epoch)
-        with open(file_path, 'a') as myfile:
-            myfile.write(str(np.mean(loss_dict)))
-            myfile.write("\n")
+        #file_path = os.getcwd() + '/loss/loss_{}.txt'.format(epoch)
+        #with open(file_path, 'a') as myfile:
+        #    myfile.write(str(np.mean(loss_dict)))
+        #    myfile.write("\n")
+
+
 
         model.eval()
-        HR, NDCG = metrics(model, test_loader, top_k=10)
-        # print("HR: {:.3f}\tNDCG: {:.3f}".format(HR, NDCG))
+        for top in [1,2,3,4,5,6,7,8,9,10]:
+            HR, NDCG = metrics(model, test_loader, top_k=top)
+            print("top-k:{}\tHR: {:.3f}\tNDCG: {:.3f}".format(top,HR, NDCG))
         if HR > best_hr: best_hr = HR
         if NDCG > best_ndcg: best_ndcg = NDCG
     print("%3d%20d%20.6f%20.6f" % (K, 20, best_hr, best_ndcg))
