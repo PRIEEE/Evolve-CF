@@ -24,3 +24,12 @@ class Dropout:
 
     def __str__(self):
         return "Dropout Layer: dropout rate:{0}".format(self.dropout)
+
+class Embedding:
+    def __init__(self,init_type, embedding_dimension):
+        self.init_type = init_type
+        self.embedding_dimension = embedding_dimension
+        self.type = 3
+
+    def __str__(self):
+        return "Embedding Layer:initial type:{0}, out feature:{1}".format(self.init_type, self.embedding_dimension)
